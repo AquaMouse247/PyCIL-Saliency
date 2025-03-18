@@ -1,0 +1,16 @@
+PyCIL Toolbox Error Collection:
+
+
+Foster:
+
+#1:
+    Traceback (most recent call last):
+      File "/coe_data/AI_CL/PyCIL/main.py", line 31, in <module>
+        main()
+      File "/coe_data/AI_CL/PyCIL/main.py", line 12, in main
+        train(args)
+      File "/coe_data/AI_CL/PyCIL/trainer.py", line 19, in train
+        _train(args)
+      File "/coe_data/AI_CL/PyCIL/trainer.py", line 126, in _train
+        np_acctable[idxx, :idxy] = np.array(line)
+    ValueError: could not broadcast input array from shape (7,) into shape (6,)
