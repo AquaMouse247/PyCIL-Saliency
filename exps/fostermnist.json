@@ -8,7 +8,7 @@
     "init_cls": 2,
     "increment": 2,
     "model_name": "foster",
-    "convnet_type": "resnet32",
+    "convnet_type": "resnet32mnist",
     "device": ["0"],
     "seed": [1993],
     "beta1":0.96,
