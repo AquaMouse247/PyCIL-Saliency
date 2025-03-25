@@ -161,4 +161,9 @@ def get_resnet32_a2fc():
     adaptivenet = SpecializedResNet_cifar(ResNetBasicblock,32)
     return basenet,adaptivenet
 
+def get_resnet32mnist_a2fc():
+    basenet = GeneralizedResNet_cifar(ResNetBasicblock,32, 1)
+    adaptivenet = SpecializedResNet_cifar(ResNetBasicblock,32)
+    return basenet,adaptivenet
+
 

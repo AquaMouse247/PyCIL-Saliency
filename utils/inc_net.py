@@ -13,6 +13,7 @@ from convs.modified_represnet import resnet18_rep,resnet34_rep
 from convs.resnet_cbam import resnet18_cbam,resnet34_cbam,resnet50_cbam
 from convs.memo_resnet import  get_resnet18_imagenet as get_memo_resnet18 #for MEMO imagenet
 from convs.memo_cifar_resnet import get_resnet32_a2fc as get_memo_resnet32 #for MEMO cifar
+from convs.memo_cifar_resnet import get_resnet32mnist_a2fc as get_memo_resnet32mnist #for MEMO mnist
 from convs.ACL_buffer import RandomBuffer, activation_t
 from convs.linears import RecursiveLinear
 from typing import Dict, Any
@@ -53,6 +54,9 @@ def get_convnet(args, pretrained=False):
         return _basenet, _adaptive_net
     elif name == 'memo_resnet32':
         _basenet, _adaptive_net = get_memo_resnet32()
+        return _basenet, _adaptive_net
+    elif name == 'memo_resnet32mnist':
+        _basenet, _adaptive_net = get_memo_resnet32mnist()
         return _basenet, _adaptive_net
     
     else:
