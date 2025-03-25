@@ -12,7 +12,8 @@ class iData(object):
 
 class iMNIST(iData):
     use_path = False
-    train_trsf = [transforms.ToTensor()]
+    train_trsf = [transforms.Pad(1),
+                  transforms.ToTensor()]
     test_trsf = [transforms.ToTensor()]
 
     class_order = np.arange(10).tolist()
