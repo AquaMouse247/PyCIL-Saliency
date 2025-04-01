@@ -243,12 +243,13 @@ class DataManager(object):
 
 
 class DummyDataset(Dataset):
-    def __init__(self, images, labels, trsf, use_path=False):
+    def __init__(self, images, labels, trsf, use_path=False, transpose=False):
         assert len(images) == len(labels), "Data size error!"
         self.images = images
         self.labels = labels
         self.trsf = trsf
         self.use_path = use_path
+        self.transpose = transpose
 
     def __len__(self):
         return len(self.images)
@@ -257,7 +258,10 @@ class DummyDataset(Dataset):
         if self.use_path:
             image = self.trsf(pil_loader(self.images[idx]))
         else:
-            image = self.trsf(Image.fromarray(self.images[idx]))
+            if self.transpose:
+                image = self.trsf(Image.fromarray(np.transpose(self.images[idx], (1, 2, 0))))
+            else:
+                image = self.trsf(Image.fromarray(self.images[idx]))
         label = self.labels[idx]
 
         return idx, image, label

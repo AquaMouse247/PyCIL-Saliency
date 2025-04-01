@@ -29,6 +29,7 @@ class iMNIST(iData):
 
 class iSVHN(iData):
     use_path = False
+    transpose = True
     train_trsf = [
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
