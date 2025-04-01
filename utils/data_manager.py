@@ -77,9 +77,9 @@ class DataManager(object):
         data, targets = np.concatenate(data), np.concatenate(targets)
 
         if ret_data:
-            return data, targets, DummyDataset(data, targets, trsf, self.use_path, self.transform)
+            return data, targets, DummyDataset(data, targets, trsf, self.use_path, self.transpose)
         else:
-            return DummyDataset(data, targets, trsf, self.use_path, self.transform)
+            return DummyDataset(data, targets, trsf, self.use_path, self.transpose)
 
         
     def get_finetune_dataset(self,known_classes,total_classes,source,mode,appendent,type="ratio"):
@@ -191,7 +191,7 @@ class DataManager(object):
         self._train_data, self._train_targets = idata.train_data, idata.train_targets
         self._test_data, self._test_targets = idata.test_data, idata.test_targets
         self.use_path = idata.use_path
-        self.transform = idata.transform
+        self.transpose = idata.transpose
 
         # Transforms
         self._train_trsf = idata.train_trsf

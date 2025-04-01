@@ -12,7 +12,7 @@ class iData(object):
 
 class iMNIST(iData):
     use_path = False
-    transform = False
+    transpose = False
     train_trsf = [transforms.Pad(2), transforms.ToTensor()]
     test_trsf = [transforms.Pad(2), transforms.ToTensor()]
 
@@ -59,7 +59,7 @@ class iSVHN(iData):
 
 class iCIFAR10(iData):
     use_path = False
-    transform = False
+    transpose = False
     train_trsf = [
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(p=0.5),
@@ -88,7 +88,7 @@ class iCIFAR10(iData):
 
 class iCIFAR100(iData):
     use_path = False
-    transform = False
+    transpose = False
     train_trsf = [
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
@@ -117,7 +117,7 @@ class iCIFAR100(iData):
 
 class iImageNet1000(iData):
     use_path = True
-    transform = False
+    transpose = False
     train_trsf = [
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
@@ -148,7 +148,7 @@ class iImageNet1000(iData):
 
 class iImageNet100(iData):
     use_path = True
-    transform = False
+    transpose = False
     train_trsf = [
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
