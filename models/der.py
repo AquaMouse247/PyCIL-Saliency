@@ -29,6 +29,11 @@ weight_decay = 2e-4
 num_workers = 8
 T = 2
 
+testing = True
+
+if testing:
+    init_epoch, epochs = 1, 1
+
 
 class DER(BaseLearner):
     def __init__(self, args):

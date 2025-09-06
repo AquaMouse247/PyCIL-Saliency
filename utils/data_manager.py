@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
-from utils.data import iMNIST, iSVHN, iCIFAR10, iCIFAR100, iImageNet100, iImageNet1000
+from utils.data import iMNIST, iSVHN, iCIFAR10, iCIFAR100, iImageNet100, iImageNet200, iImageNet1000
 from tqdm import tqdm
 
 class DataManager(object):
@@ -284,6 +284,8 @@ def _get_idata(dataset_name):
         return iCIFAR100()
     elif name == "imagenet1000":
         return iImageNet1000()
+    elif name == "imagenet200":
+        return iImageNet200()
     elif name == "imagenet100":
         return iImageNet100()
     else:
