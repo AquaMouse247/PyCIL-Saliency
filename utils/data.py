@@ -1,6 +1,8 @@
 import numpy as np
 from torchvision import datasets, transforms
 from utils.toolkit import split_images_labels
+from . import autoaugment
+from . import ops
 
 
 class iData(object):
@@ -114,6 +116,26 @@ class iCIFAR100(iData):
             test_dataset.targets
         )
 
+class iCIFAR100_AA(iCIFAR100):
+    train_trsf = [
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.ColorJitter(brightness=63 / 255),
+        autoaugment.CIFAR10Policy(),
+        transforms.ToTensor(),
+        ops.Cutout(n_holes=1, length=16),
+    ]
+
+
+class iCIFAR10_AA(iCIFAR10):
+    train_trsf = [
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.ColorJitter(brightness=63 / 255),
+        autoaugment.CIFAR10Policy(),
+        transforms.ToTensor(),
+        ops.Cutout(n_holes=1, length=16),
+    ]
 
 class iImageNet1000(iData):
     use_path = True
@@ -164,6 +186,36 @@ class iImageNet200(iData):
 
     class_order = np.arange(200).tolist()
 
+    ## Check this later...
+    def organize_val_dataset(self):
+        import os
+        import shutil
+
+        val_dir = 'data/tiny-imagenet-200/val/'
+        val_annotations_file = os.path.join(val_dir, 'val_annotations.txt')
+
+        with open(val_annotations_file, 'r') as f:
+            annotations = f.readlines()
+
+        for line in annotations:
+            parts = line.strip().split('\t')
+            img_filename = parts[0]
+            class_name = parts[1]
+
+            # Create the class directory if it doesn't exist
+            class_dir = os.path.join(val_dir, class_name)
+            if not os.path.exists(class_dir):
+                os.makedirs(class_dir)
+
+            # Move the image
+            src_path = os.path.join(val_dir, 'images', img_filename)
+            dst_path = os.path.join(class_dir, img_filename)
+            shutil.move(src_path, dst_path)
+
+        # Remove the empty images directory and the annotations file
+        shutil.rmtree(os.path.join(val_dir, 'images'))
+        os.remove(val_annotations_file)
+
     def download_data(self):
         #assert 0, "You should specify the folder of your dataset"
         train_dir = "data/tiny-imagenet-200/train/"
@@ -171,6 +223,9 @@ class iImageNet200(iData):
 
         train_dset = datasets.ImageFolder(train_dir)
         test_dset = datasets.ImageFolder(test_dir)
+        if len(test_dset.classes) == 1:
+            self.organize_val_dataset()
+            test_dset = datasets.ImageFolder(test_dir)
 
         self.train_data, self.train_targets = split_images_labels(train_dset.imgs)
         self.test_data, self.test_targets = split_images_labels(test_dset.imgs)

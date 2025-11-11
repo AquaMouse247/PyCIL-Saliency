@@ -3,12 +3,14 @@ import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
-from utils.data import iMNIST, iSVHN, iCIFAR10, iCIFAR100, iImageNet100, iImageNet200, iImageNet1000
+from utils.data import iMNIST, iSVHN, iCIFAR10, iCIFAR100, iImageNet100, iImageNet200, iImageNet1000, iCIFAR10_AA, iCIFAR100_AA
 from tqdm import tqdm
+import torch
 
 class DataManager(object):
-    def __init__(self, dataset_name, shuffle, seed, init_cls, increment):
+    def __init__(self, dataset_name, shuffle, seed, init_cls, increment, aug=1):
         self.dataset_name = dataset_name
+        self.aug = aug
         self._setup_data(dataset_name, shuffle, seed)
         assert init_cls <= len(self._class_order), "No enough classes."
         self._increments = [init_cls]
@@ -77,9 +79,9 @@ class DataManager(object):
         data, targets = np.concatenate(data), np.concatenate(targets)
 
         if ret_data:
-            return data, targets, DummyDataset(data, targets, trsf, self.use_path, self.transpose)
+            return data, targets, DummyDataset(data, targets, trsf, self.use_path, self.aug if source == "train" and mode == "train" else 1)
         else:
-            return DummyDataset(data, targets, trsf, self.use_path, self.transpose)
+            return DummyDataset(data, targets, trsf, self.use_path, self.aug if source == "train" and mode == "train" else 1)
 
         
     def get_finetune_dataset(self,known_classes,total_classes,source,mode,appendent,type="ratio"):
@@ -125,7 +127,7 @@ class DataManager(object):
             val_targets.append(class_targets[val_indx])
         val_data=np.concatenate(val_data)
         val_targets = np.concatenate(val_targets)
-        return DummyDataset(val_data, val_targets, trsf, self.use_path)
+        return DummyDataset(val_data, val_targets, trsf, self.use_path, self.aug if source == "train" and mode == "train" else 1)
 
     def get_dataset_with_split(
         self, indices, source, mode, appendent=None, val_samples_per_class=0
@@ -180,7 +182,7 @@ class DataManager(object):
         val_data, val_targets = np.concatenate(val_data), np.concatenate(val_targets)
 
         return DummyDataset(
-            train_data, train_targets, trsf, self.use_path
+            train_data, train_targets, trsf, self.use_path, self.aug
         ), DummyDataset(val_data, val_targets, trsf, self.use_path)
 
     def _setup_data(self, dataset_name, shuffle, seed):
@@ -191,7 +193,6 @@ class DataManager(object):
         self._train_data, self._train_targets = idata.train_data, idata.train_targets
         self._test_data, self._test_targets = idata.test_data, idata.test_targets
         self.use_path = idata.use_path
-        self.transpose = idata.transpose
 
         # Transforms
         self._train_trsf = idata.train_trsf
@@ -244,28 +245,32 @@ class DataManager(object):
 
 
 class DummyDataset(Dataset):
-    def __init__(self, images, labels, trsf, use_path=False, transpose=False):
+    def __init__(self, images, labels, trsf, use_path=False, aug=1):
         assert len(images) == len(labels), "Data size error!"
+        self.aug = aug
         self.images = images
         self.labels = labels
         self.trsf = trsf
         self.use_path = use_path
-        self.transpose = transpose
 
     def __len__(self):
         return len(self.images)
 
     def __getitem__(self, idx):
-        if self.use_path:
-            image = self.trsf(pil_loader(self.images[idx]))
-        else:
-            if self.transpose:
-                image = self.trsf(Image.fromarray(np.transpose(self.images[idx], (1, 2, 0))))
+        if self.aug == 1:
+            if self.use_path:
+                image = self.trsf(pil_loader(self.images[idx]))
             else:
                 image = self.trsf(Image.fromarray(self.images[idx]))
-        label = self.labels[idx]
-
-        return idx, image, label
+            label = self.labels[idx]
+            return idx, image, label
+        else:
+            if self.use_path:
+                images = [self.trsf(pil_loader(self.images[idx])) for _ in range(self.aug)]
+            else:
+                images = [self.trsf(Image.fromarray(self.images[idx])) for _ in range(self.aug)]
+            label = self.labels[idx]
+            return idx, *images, label
 
 
 def _map_new_class_index(y, order):
@@ -288,6 +293,10 @@ def _get_idata(dataset_name):
         return iImageNet200()
     elif name == "imagenet100":
         return iImageNet100()
+    elif name == "cifar100_aa":
+        return iCIFAR100_AA()
+    elif name == "cifar10_aa":
+        return iCIFAR10_AA()
     else:
         raise NotImplementedError("Unknown dataset {}.".format(dataset_name))
 

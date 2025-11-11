@@ -33,6 +33,38 @@ class SimpleLinear(nn.Module):
     def forward(self, input):
         return {'logits': F.linear(input, self.weight, self.bias)}
 
+class TagFex_SimpleLinear(nn.Module):
+    '''
+    Reference:
+    https://github.com/pytorch/pytorch/blob/master/torch/nn/modules/linear.py
+    '''
+    __constants__ = ['in_features', 'out_features']
+    in_features: int
+    out_features: int
+    weight: torch.Tensor
+
+    def __init__(self, in_features: int, out_features: int, bias: bool = True, device=None, dtype=None):
+        factory_kwargs = {'device': device, 'dtype': dtype}
+        super(TagFex_SimpleLinear, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.weight = nn.Parameter(torch.empty(out_features, in_features, **factory_kwargs))
+        if bias:
+            self.bias = nn.Parameter(torch.empty(out_features, **factory_kwargs))
+        else:
+            self.register_parameter('bias', None)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.kaiming_uniform_(self.weight, nonlinearity='linear')
+        if self.bias is not None:
+            nn.init.zeros_(self.bias)
+
+    def forward(self, input) -> torch.Tensor:
+        return F.linear(input, self.weight, self.bias)
+
+    def extra_repr(self) -> str:
+        return f'in_features={self.in_features}, out_features={self.out_features}, bias={self.bias is not None}'
 
 class CosineLinear(nn.Module):
     def __init__(self, in_features, out_features, nb_proxy=1, to_reduce=False, sigma=True):

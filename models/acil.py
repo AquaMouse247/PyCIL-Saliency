@@ -275,7 +275,7 @@ class ACIL(BaseLearner):
             model.eval()
             if (epoch + 1) % self.train_eval_freq == 0:
                 train_metrics = _evaluate(
-                    model, train_loader, process_bar, self._device
+                    model, train_loader, process_bar, self._device, self.topk
                 )
                 with logging_redirect_tqdm():
                     logging.info(
@@ -286,7 +286,7 @@ class ACIL(BaseLearner):
                         f"LR: {scheduler.get_last_lr()[0]}"
                     )
 
-            test_metrics = _evaluate(model, test_loader, process_bar, self._device)
+            test_metrics = _evaluate(model, test_loader, process_bar, self._device, self.topk)
             with logging_redirect_tqdm():
                 logging.info(
                     f"Epoch {epoch + 1}/{init_epochs} - "
@@ -314,7 +314,7 @@ def _evaluate(
     model: torch.nn.Module,
     loader: DataLoader,
     progress_bar: Optional[tqdm] = None,
-    device=None,
+    device=None, topk = 5
 ) -> Dict[str, float]:
     """Evaluate the model on the given data loader."""
     model.eval()
@@ -330,7 +330,7 @@ def _evaluate(
 
         logits: torch.Tensor = model(X)
         acc1_cnt += (logits.argmax(dim=1) == y).sum().item()
-        acc5_cnt += (logits.topk(5, dim=1).indices == y[:, None]).sum().item()
+        acc5_cnt += (logits.topk(topk, dim=1).indices == y[:, None]).sum().item()
         sample_cnt += y.size(0)
         total_loss += float(criterion(logits, y).item())
 

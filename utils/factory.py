@@ -72,5 +72,8 @@ def get_model(model_name, args):
     elif name == "aper_finetune":
         from models.aper_finetune import APER_FINETUNE
         return APER_FINETUNE(args)
+    elif name == "tagfex":
+        from models.tagfex import TagFex
+        return TagFex(args)
     else:
         assert 0
