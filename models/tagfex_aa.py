@@ -149,15 +149,19 @@ class TagFex(BaseLearner):
             self.train()
             losses = 0.0
             correct, total = 0, 0
-            for i, (_, inputs1, targets) in enumerate(train_loader):
-                inputs1, targets = inputs1.to(self._device), targets.to(self._device)
+            for i, (_, inputs1, inputs2, targets) in enumerate(train_loader):
+                inputs1, inputs2, targets = inputs1.to(self._device), inputs2.to(self._device), targets.to(self._device)
 
-                out = self._network(inputs1)
+                inputs = torch.cat([inputs1, inputs2], dim=0)
+                targets = torch.cat([targets, targets], dim=0)
+
+                out = self._network(inputs)
                 logits = out["logits"]
                 embedding = out["embedding"]
 
                 ce_loss = F.cross_entropy(logits, targets)
-                loss = ce_loss
+                infonce_loss = infoNCE_loss(embedding, self.args['infonce_temp'])
+                loss = ce_loss + infonce_loss * self.args['contrast_factor']
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -200,14 +204,17 @@ class TagFex(BaseLearner):
             losses_clf = 0.0
             losses_aux = 0.0
             correct, total = 0, 0
-            for i, (_, inputs1, targets) in enumerate(train_loader):
-                inputs1, targets = inputs1.to(self._device), targets.to(self._device)
+            for i, (_, inputs1, inputs2, targets) in enumerate(train_loader):
+                inputs1, inputs2, targets = inputs1.to(self._device), inputs2.to(self._device), targets.to(self._device)
 
+                inputs = torch.cat([inputs1, inputs2], dim=0)
+                targets = torch.cat([targets, targets], dim=0)
 
-                outputs = self._network(inputs1)
+                outputs = self._network(inputs)
                 logits, aux_logits = outputs["logits"], outputs["aux_logits"]
                 embedding = outputs['embedding']
 
+                infonce_loss = infoNCE_loss(embedding, self.args['infonce_temp'])
                 loss_clf = F.cross_entropy(logits, targets)
                 aux_targets = targets.clone()
                 aux_targets = torch.where(
@@ -217,7 +224,7 @@ class TagFex(BaseLearner):
                 )
                 loss_aux = F.cross_entropy(aux_logits, aux_targets)
                 predicted_feature = outputs['predicted_feature']
-                old_ta_feature = self.last_ta_net(inputs1.contiguous())['features']
+                old_ta_feature = self.last_ta_net(inputs.contiguous())['features']
                 kd_loss = infoNCE_distill_loss(self.last_projector(predicted_feature),
                                                self.last_projector(old_ta_feature), self.args['infonce_kd_temp'])
                 trans_logits = outputs["trans_logits"]
@@ -236,6 +243,8 @@ class TagFex(BaseLearner):
                 auto_kd_factor = self._known_classes / self._total_classes
                 loss = loss_clf + \
                        self.args['aux_factor'] * loss_aux + \
+                       self.args['contrast_factor'] * (infonce_loss * (1 - auto_kd_factor) + self.args[
+                    'contrast_kd_factor'] * kd_loss * auto_kd_factor) + \
                        self.args['trans_cls_factor'] * trans_cls_loss + \
                        self.args['transfer_factor'] * transfer_loss
 
