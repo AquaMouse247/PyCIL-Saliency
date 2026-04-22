@@ -65,37 +65,56 @@ def _train(args):
     cnn_curve, nme_curve = {"top1": [], "top5": []}, {"top1": [], "top5": []}
     cnn_matrix, nme_matrix = [], []
 
-    for task in range(data_manager.nb_tasks):
-        '''if task > 0:
-            savemodelname = "savedmodels/{}/{}/full/{}_ses_{}.pth".format(
+    for task in range(args["start_task"] == 0, data_manager.nb_tasks):
+        if args["start_task"] == 0 or (args["start_task"] != 0 and task != args["start_task"]):
+            '''if task > 0:
+                savemodelname = "savedmodels/{}/{}/full/{}_ses_{}.pth".format(
+                    args["model_name"],
+                    args["dataset"],
+                    args["model_name"],
+                    task
+                )
+                #torch.save(model._network.state_dict(), savemodelname)
+                torch.save(model._network, savemodelname)'''
+
+            logging.info("All params: {}".format(count_parameters(model._network)))
+            logging.info(
+                "Trainable params: {}".format(count_parameters(model._network, True))
+            )
+
+            model.incremental_train(data_manager)
+            cnn_accy, nme_accy = model.eval_task()
+
+            #Inline Saliency
+            _ = model._compute_accuracy(model._network, model.test_loader)
+
+            # Save model after session for saliency
+            savemodelname = "savedmodels/{}/{}/{}_ses_{}.pth".format(
                 args["model_name"],
                 args["dataset"],
                 args["model_name"],
                 task
             )
-            #torch.save(model._network.state_dict(), savemodelname)
-            torch.save(model._network, savemodelname)'''
+            torch.save(model._network.state_dict(), savemodelname)
+            #torch.save(model._network, savemodelname)
+        else:
+            # Load model from checkpoint
+            print(f"Loading Model from Task {task}...")
+            savemodelname = "savedmodels/{}/{}/{}_ses_{}.pth".format(
+                args["model_name"],
+                args["dataset"],
+                args["model_name"],
+                task
+            )
+            load_start_sess = load_start_sess - 1 if args["model_name"] == "foster" else 0
+            for i in range(load_start_sess, task + 1):
+                model._network.update_fc(args["increment"] * (i + 1))
 
-        logging.info("All params: {}".format(count_parameters(model._network)))
-        logging.info(
-            "Trainable params: {}".format(count_parameters(model._network, True))
-        )
-
-        model.incremental_train(data_manager)
-        cnn_accy, nme_accy = model.eval_task()
-
-        #Inline Saliency
-        _ = model._compute_accuracy(model._network, model.test_loader)
-
-        # Save model after session for saliency
-        savemodelname = "savedmodels/{}/{}/{}_ses_{}.pth".format(
-            args["model_name"],
-            args["dataset"],
-            args["model_name"],
-            task
-        )
-        torch.save(model._network.state_dict(), savemodelname)
-        #torch.save(model._network, savemodelname)
+            model_data = torch.load(savemodelname, map_location=args["device"][0], weights_only=False)
+            model._network.load_state_dict(model_data)
+            print(f"Finshed Loading Model from Task {task}")
+            model.setup_loaded_model(data_manager, task)
+            cnn_accy, nme_accy = model.eval_task()
 
         model.after_task()
 

@@ -4,6 +4,8 @@ import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+
+from models.der import num_workers
 from utils.toolkit import tensor2numpy, accuracy
 from scipy.spatial.distance import cdist
 import os
@@ -389,3 +391,41 @@ class BaseLearner(object):
             _class_means[class_idx, :] = mean
 
         self._class_means = _class_means
+
+    def setup_loaded_model(self, data_manager, cur_task):
+        self._cur_task += cur_task
+        self._known_classes = (cur_task-1) * data_manager.get_task_size(self._cur_task)
+        self._total_classes = self._known_classes + data_manager.get_task_size(
+            self._cur_task
+        )
+        print("Known Classes:", self._known_classes)
+        print("Total Classes:", self._total_classes)
+
+        logging.info(
+            "Learning on {}-{}".format(self._known_classes, self._total_classes)
+        )
+
+        train_dataset = data_manager.get_dataset(
+            np.arange(self._known_classes, self._total_classes),
+            source="train",
+            mode="train",
+            appendent=self._get_memory(),
+        )
+
+        num_workers = 8
+        self.train_loader = DataLoader(
+            train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers
+        )
+        test_dataset = data_manager.get_dataset(
+            np.arange(0, self._total_classes), source="test", mode="test"
+        )
+        self.test_loader = DataLoader(
+            test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers
+        )
+
+        self._network.to(self._device)
+        if len(self._multiple_gpus) > 1:
+            self._network = nn.DataParallel(self._network, self._multiple_gpus)
+        self.build_rehearsal_memory(data_manager, self.samples_per_class)
+        if len(self._multiple_gpus) > 1:
+            self._network = self._network.module

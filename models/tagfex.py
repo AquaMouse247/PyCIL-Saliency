@@ -149,7 +149,7 @@ class TagFex(BaseLearner):
             self.train()
             losses = 0.0
             correct, total = 0, 0
-            for i, (_, inputs1, targets) in enumerate(train_loader):
+            for i, (_, inputs1, _, targets) in enumerate(train_loader):
                 inputs1, targets = inputs1.to(self._device), targets.to(self._device)
 
                 out = self._network(inputs1)
@@ -200,7 +200,7 @@ class TagFex(BaseLearner):
             losses_clf = 0.0
             losses_aux = 0.0
             correct, total = 0, 0
-            for i, (_, inputs1, targets) in enumerate(train_loader):
+            for i, (_, inputs1, _, targets) in enumerate(train_loader):
                 inputs1, targets = inputs1.to(self._device), targets.to(self._device)
 
 
