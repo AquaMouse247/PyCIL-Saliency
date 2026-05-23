@@ -1,5 +1,6 @@
 ## SALIENCY MAP-MAKING
 
+'''
 import os
 import torch
 import torchvision.transforms as transforms
@@ -47,7 +48,7 @@ def get_indices(dataset, class_name):
             if dataset.targets[i] == j:
                 indices.append(i)
     return indices
-
+'''
 
 '''def load_model(algorithm, dataset, ses, **kwargs):
     model = None
@@ -76,7 +77,7 @@ def get_indices(dataset, class_name):
     return scholar.solver
 '''
 
-
+'''
 def load_saliency_data(dataset, desired_classes, imgs_per_class):
     transform = transforms.Compose(
         [transforms.ToTensor()])
@@ -404,3 +405,4 @@ def create_saliency_map_inline(model, ses, dataset, desired_classes, imgs_per_cl
     plt.close()
     torch.save(compare_grads, f"{fig_save_path}/compare_dict_sess{ses}.pt")
     # fig.show()
+'''

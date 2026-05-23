@@ -78,8 +78,10 @@ class iCIFAR10(iData):
     class_order = np.arange(10).tolist()
 
     def download_data(self):
-        train_dataset = datasets.cifar.CIFAR10("../Datasets/CIFAR10", train=True, download=True)
-        test_dataset = datasets.cifar.CIFAR10("../Datasets/CIFAR10", train=False, download=True)
+        #train_dataset = datasets.cifar.CIFAR10("../Datasets/CIFAR10", train=True, download=True)
+        #test_dataset = datasets.cifar.CIFAR10("../Datasets/CIFAR10", train=False, download=True)
+        train_dataset = datasets.cifar.CIFAR10("data/CIFAR10", train=True, download=True)
+        test_dataset = datasets.cifar.CIFAR10("data/CIFAR10", train=False, download=True)
         self.train_data, self.train_targets = train_dataset.data, np.array(
             train_dataset.targets
         )

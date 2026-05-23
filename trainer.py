@@ -20,14 +20,13 @@ def train(args):
 
 
 def _train(args):
+    init_cls = 0 if args["init_cls"] == args["increment"] else args["init_cls"]
+    logs_name = "logs/{}/{}/{}/{}".format(args["model_name"], args["dataset"], init_cls, args['increment'])
 
-    init_cls = 0 if args ["init_cls"] == args["increment"] else args["init_cls"]
-    logs_name = "logs/{}/{}/{}/{}".format(args["model_name"],args["dataset"], init_cls, args['increment'])
-    
     if not os.path.exists(logs_name):
         os.makedirs(logs_name)
 
-    saves_name = "savedmodels/{}/{}".format(args["model_name"],args["dataset"])
+    saves_name = "savedmodels/{}/{}".format(args["model_name"], args["dataset"])
     if not os.path.exists(saves_name):
         os.makedirs(saves_name)
 
@@ -65,7 +64,10 @@ def _train(args):
     cnn_curve, nme_curve = {"top1": [], "top5": []}, {"top1": [], "top5": []}
     cnn_matrix, nme_matrix = [], []
 
-    for task in range(args["start_task"] == 0, data_manager.nb_tasks):
+    print("Start Task:", args["start_task"])
+    #for task in range(args["start_task"], data_manager.nb_tasks):
+    for task in range(1,5):
+        print("Task:", task)
         if args["start_task"] == 0 or (args["start_task"] != 0 and task != args["start_task"]):
             '''if task > 0:
                 savemodelname = "savedmodels/{}/{}/full/{}_ses_{}.pth".format(
@@ -85,7 +87,7 @@ def _train(args):
             model.incremental_train(data_manager)
             cnn_accy, nme_accy = model.eval_task()
 
-            #Inline Saliency
+            # Inline Saliency
             _ = model._compute_accuracy(model._network, model.test_loader)
 
             # Save model after session for saliency
@@ -95,25 +97,27 @@ def _train(args):
                 args["model_name"],
                 task
             )
-            torch.save(model._network.state_dict(), savemodelname)
-            #torch.save(model._network, savemodelname)
+            #torch.save(model._network.state_dict(), savemodelname)
+            # torch.save(model._network, savemodelname)
         else:
             # Load model from checkpoint
             print(f"Loading Model from Task {task}...")
-            savemodelname = "savedmodels/{}/{}/{}_ses_{}.pth".format(
+
+            load_start_sess = task - 1 if args["model_name"] == "foster" else 0
+            for i in range(load_start_sess, task + 1):
+                savemodelname = "savedmodels/{}/{}/{}_ses_{}.pth".format(
                 args["model_name"],
                 args["dataset"],
                 args["model_name"],
-                task
+                i
             )
-            load_start_sess = load_start_sess - 1 if args["model_name"] == "foster" else 0
-            for i in range(load_start_sess, task + 1):
                 model._network.update_fc(args["increment"] * (i + 1))
+                model_data = torch.load(savemodelname, map_location=args["device"][0], weights_only=False)
+                model._network.load_state_dict(model_data)
+                model.setup_loaded_model(data_manager, i)
 
-            model_data = torch.load(savemodelname, map_location=args["device"][0], weights_only=False)
-            model._network.load_state_dict(model_data)
             print(f"Finshed Loading Model from Task {task}")
-            model.setup_loaded_model(data_manager, task)
+
             cnn_accy, nme_accy = model.eval_task()
 
         model.after_task()
@@ -132,7 +136,6 @@ def _train(args):
             nme_values = [nme_accy["grouped"][key] for key in nme_keys_sorted]
             nme_matrix.append(nme_values)
 
-
             cnn_curve["top1"].append(cnn_accy["top1"])
             if model.topk == 5:
                 cnn_curve["top5"].append(cnn_accy["top5"])
@@ -148,11 +151,11 @@ def _train(args):
             if model.topk == 5:
                 logging.info("NME top5 curve: {}\n".format(nme_curve["top5"]))
 
-            print('Average Accuracy (CNN):', sum(cnn_curve["top1"])/len(cnn_curve["top1"]))
-            print('Average Accuracy (NME):', sum(nme_curve["top1"])/len(nme_curve["top1"]))
+            print('Average Accuracy (CNN):', sum(cnn_curve["top1"]) / len(cnn_curve["top1"]))
+            print('Average Accuracy (NME):', sum(nme_curve["top1"]) / len(nme_curve["top1"]))
 
-            logging.info("Average Accuracy (CNN): {}".format(sum(cnn_curve["top1"])/len(cnn_curve["top1"])))
-            logging.info("Average Accuracy (NME): {}".format(sum(nme_curve["top1"])/len(nme_curve["top1"])))
+            logging.info("Average Accuracy (CNN): {}".format(sum(cnn_curve["top1"]) / len(cnn_curve["top1"])))
+            logging.info("Average Accuracy (NME): {}".format(sum(nme_curve["top1"]) / len(nme_curve["top1"])))
         else:
             logging.info("No NME accuracy.")
             logging.info("CNN: {}".format(cnn_accy["grouped"]))
@@ -170,14 +173,14 @@ def _train(args):
             if model.topk == 5:
                 logging.info("CNN top5 curve: {}\n".format(cnn_curve["top5"]))
 
-            print('Average Accuracy (CNN):', sum(cnn_curve["top1"])/len(cnn_curve["top1"]))
-            logging.info("Average Accuracy (CNN): {}".format(sum(cnn_curve["top1"])/len(cnn_curve["top1"])))
-    torch.save(model._network.state_dict(), "savedmodels/{}/{}/{}_ses_{}.pth".format(args["model_name"],
-                                                                                     args["dataset"],
-                                                                                     args["model_name"],
-                                                                                     task))
+            print('Average Accuracy (CNN):', sum(cnn_curve["top1"]) / len(cnn_curve["top1"]))
+            logging.info("Average Accuracy (CNN): {}".format(sum(cnn_curve["top1"]) / len(cnn_curve["top1"])))
+    #torch.save(model._network.state_dict(), "savedmodels/{}/{}/{}_ses_{}.pth".format(args["model_name"],
+    #                                                                                 args["dataset"],
+    #                                                                                 args["model_name"],
+    #                                                                                 task))
 
-    if len(cnn_matrix)>0:
+    if len(cnn_matrix) > 0:
         np_acctable = np.zeros([task + 1, task + 1])
         for idxx, line in enumerate(cnn_matrix):
             idxy = len(line)
@@ -188,7 +191,7 @@ def _train(args):
         print(np_acctable)
         print('Forgetting (CNN):', forgetting)
         logging.info('Forgetting (CNN): {}'.format(forgetting))
-    if len(nme_matrix)>0:
+    if len(nme_matrix) > 0:
         np_acctable = np.zeros([task + 1, task + 1])
         for idxx, line in enumerate(nme_matrix):
             idxy = len(line)
