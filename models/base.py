@@ -24,7 +24,8 @@ class BaseLearner(object):
         self._data_memory, self._targets_memory = np.array([]), np.array([])
         if args["dataset"] == "cifar100":
             self.topk = 5
-        else: self.topk = 1
+        else:
+            self.topk = 1
 
         self._memory_size = args["memory_size"]
         self._memory_per_class = args.get("memory_per_class", None)
@@ -85,6 +86,7 @@ class BaseLearner(object):
         return ret
 
     def eval_task(self, save_conf=False):
+        print("Running eval task...")
         y_pred, y_true = self._eval_cnn(self.test_loader)
         cnn_accy = self._evaluate(y_pred, y_true)
 
@@ -132,7 +134,7 @@ class BaseLearner(object):
             predicts = torch.max(outputs, dim=1)[1]
             if saliency and i == 0:
                 create_saliency_map(self._network, self._cur_task, "cifar100",
-                                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],1,
+                                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 1,
                                     True, inputs, targets, predicts, self.args["model_name"])
             correct += (predicts.cpu() == targets).sum()
             total += len(targets)
@@ -400,14 +402,8 @@ class BaseLearner(object):
             self._cur_task
         )
 
-        print("Known Classes:", self._known_classes)
-        print("Total Classes:", self._total_classes)
         self._network.to(self._device)
 
-        for task in range(cur_task):
-            self.build_rehearsal_memory(data_manager, self.samples_per_class)
-
-        '''
         logging.info(
             "Learning on {}-{}".format(self._known_classes, self._total_classes)
         )
@@ -429,8 +425,10 @@ class BaseLearner(object):
         self.test_loader = DataLoader(
             test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers
         )
-        
-        
+
+        self.build_rehearsal_memory(data_manager, self.samples_per_class)
+
+        '''
         if len(self._multiple_gpus) > 1:
             self._network = nn.DataParallel(self._network, self._multiple_gpus)
         self.build_rehearsal_memory(data_manager, self.samples_per_class)

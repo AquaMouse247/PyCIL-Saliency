@@ -65,10 +65,10 @@ def _train(args):
     cnn_matrix, nme_matrix = [], []
 
     print("Start Task:", args["start_task"])
-    #for task in range(args["start_task"], data_manager.nb_tasks):
-    for task in range(1,5):
+    for task in range(data_manager.nb_tasks):
+    #for task in range(1,5):
         print("Task:", task)
-        if args["start_task"] == 0 or (args["start_task"] != 0 and task != args["start_task"]):
+        if task >= args["start_task"]:
             '''if task > 0:
                 savemodelname = "savedmodels/{}/{}/full/{}_ses_{}.pth".format(
                     args["model_name"],
@@ -101,26 +101,26 @@ def _train(args):
             # torch.save(model._network, savemodelname)
         else:
             # Load model from checkpoint
-            print(f"Loading Model from Task {task}...")
+            print(f"Loading Model from Task {args["start_task"]-1}...")
 
-            load_start_sess = task - 1 if args["model_name"] == "foster" else 0
-            for i in range(load_start_sess, task + 1):
-                savemodelname = "savedmodels/{}/{}/{}_ses_{}.pth".format(
-                args["model_name"],
-                args["dataset"],
-                args["model_name"],
-                i
-            )
-                model._network.update_fc(args["increment"] * (i + 1))
-                model_data = torch.load(savemodelname, map_location=args["device"][0], weights_only=False)
-                model._network.load_state_dict(model_data)
-                model.setup_loaded_model(data_manager, i)
+            load_start_sess = (args["start_task"]-1) - 1 if args["model_name"] == "foster" else 0
+            #for i in range(load_start_sess, task + 1):
+            savemodelname = "savedmodels/{}/{}/{}_ses_{}.pth".format(
+            args["model_name"],
+            args["dataset"],
+            args["model_name"],
+            task
+        )
+            model._network.update_fc(args["increment"] * (task + 1))
+            model_data = torch.load(savemodelname, map_location=args["device"][0], weights_only=False)
+            model._network.load_state_dict(model_data)
+            model.setup_loaded_model(data_manager, task)
+            print(f"Building memory for Task {task}...")
 
-            print(f"Finshed Loading Model from Task {task}")
-
-            cnn_accy, nme_accy = model.eval_task()
-
+        cnn_accy, nme_accy = model.eval_task()
         model.after_task()
+        if task == args["start_task"] - 1:
+            print(f"Finshed Loading Model from Task {task}")
 
         if nme_accy is not None:
             logging.info("CNN: {}".format(cnn_accy["grouped"]))
