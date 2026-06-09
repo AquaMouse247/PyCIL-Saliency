@@ -64,7 +64,6 @@ def _train(args):
     cnn_curve, nme_curve = {"top1": [], "top5": []}, {"top1": [], "top5": []}
     cnn_matrix, nme_matrix = [], []
 
-    print("Start Task:", args["start_task"])
     for task in range(data_manager.nb_tasks):
         logging.info("All params: {}".format(count_parameters(model._network)))
         logging.info(
@@ -74,7 +73,7 @@ def _train(args):
         model.incremental_train(data_manager)
         cnn_accy, nme_accy = model.eval_task()
 
-        # Save model after session for saliency
+        # Save model after session for shap
         savemodelname = "savedmodels/{}/{}/{}_ses_{}.pth".format(
             args["model_name"],
             args["dataset"],

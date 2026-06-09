@@ -86,7 +86,7 @@ class BaseLearner(object):
         return ret
 
     def eval_task(self, save_conf=False):
-        print("Running eval task...")
+        #print("Running eval task...")
         y_pred, y_true = self._eval_cnn(self.test_loader)
         cnn_accy = self._evaluate(y_pred, y_true)
 
@@ -124,7 +124,7 @@ class BaseLearner(object):
             return (self._data_memory, self._targets_memory)
 
     def _compute_accuracy(self, model, loader, saliency=False):
-        from saliency import create_saliency_map
+        #from saliency import create_saliency_map
         model.eval()
         correct, total = 0, 0
         for i, (_, inputs, targets) in enumerate(loader):
@@ -132,10 +132,10 @@ class BaseLearner(object):
             with torch.no_grad():
                 outputs = model(inputs)["logits"]
             predicts = torch.max(outputs, dim=1)[1]
-            if saliency and i == 0:
-                create_saliency_map(self._network, self._cur_task, "cifar100",
-                                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 1,
-                                    True, inputs, targets, predicts, self.args["model_name"])
+            #if saliency and i == 0:
+            #    create_saliency_map(self._network, self._cur_task, "cifar100",
+            #                        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 1,
+            #                        True, inputs, targets, predicts, self.args["model_name"])
             correct += (predicts.cpu() == targets).sum()
             total += len(targets)
 
