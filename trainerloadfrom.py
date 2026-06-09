@@ -66,23 +66,58 @@ def _train(args):
 
     print("Start Task:", args["start_task"])
     for task in range(data_manager.nb_tasks):
-        logging.info("All params: {}".format(count_parameters(model._network)))
-        logging.info(
-            "Trainable params: {}".format(count_parameters(model._network, True))
-        )
+    #for task in range(1,5):
+        print("Task:", task)
+        if task >= args["start_task"]:
+            '''if task > 0:
+                savemodelname = "savedmodels/{}/{}/full/{}_ses_{}.pth".format(
+                    args["model_name"],
+                    args["dataset"],
+                    args["model_name"],
+                    task
+                )
+                #torch.save(model._network.state_dict(), savemodelname)
+                torch.save(model._network, savemodelname)'''
 
-        model.incremental_train(data_manager)
-        cnn_accy, nme_accy = model.eval_task()
+            logging.info("All params: {}".format(count_parameters(model._network)))
+            logging.info(
+                "Trainable params: {}".format(count_parameters(model._network, True))
+            )
 
-        # Save model after session for saliency
-        savemodelname = "savedmodels/{}/{}/{}_ses_{}.pth".format(
+            model.incremental_train(data_manager)
+            cnn_accy, nme_accy = model.eval_task()
+
+            # Inline Saliency
+            _ = model._compute_accuracy(model._network, model.test_loader)
+
+            # Save model after session for saliency
+            savemodelname = "savedmodels/{}/{}/{}_ses_{}.pth".format(
+                args["model_name"],
+                args["dataset"],
+                args["model_name"],
+                task
+            )
+            #torch.save(model._network.state_dict(), savemodelname)
+            # torch.save(model._network, savemodelname)
+        else:
+            # Load model from checkpoint
+            print(f"Loading Model from Task {args["start_task"]-1}...")
+
+            load_start_sess = (args["start_task"]-1) - 1 if args["model_name"] == "foster" else 0
+            #for i in range(load_start_sess, task + 1):
+            savemodelname = "savedmodels/{}/{}/{}_ses_{}.pth".format(
             args["model_name"],
             args["dataset"],
             args["model_name"],
             task
         )
-        torch.save(model._network.state_dict(), savemodelname)
+            model._network.update_fc(args["increment"] * (task + 1))
+            model_data = torch.load(savemodelname, map_location=args["device"][0], weights_only=False)
+            model._network.load_state_dict(model_data)
+            model.setup_loaded_model(data_manager, task)
+            print(f"Building memory for Task {task}...")
 
+        cnn_accy, nme_accy = model.eval_task()
         model.after_task()
         if task == args["start_task"] - 1:
             print(f"Finshed Loading Model from Task {task}")
@@ -140,10 +175,10 @@ def _train(args):
 
             print('Average Accuracy (CNN):', sum(cnn_curve["top1"]) / len(cnn_curve["top1"]))
             logging.info("Average Accuracy (CNN): {}".format(sum(cnn_curve["top1"]) / len(cnn_curve["top1"])))
-    torch.save(model._network.state_dict(), "savedmodels/{}/{}/{}_ses_{}.pth".format(args["model_name"],
-                                                                                     args["dataset"],
-                                                                                     args["model_name"],
-                                                                                     task))
+    #torch.save(model._network.state_dict(), "savedmodels/{}/{}/{}_ses_{}.pth".format(args["model_name"],
+    #                                                                                 args["dataset"],
+    #                                                                                 args["model_name"],
+    #                                                                                 task))
 
     if len(cnn_matrix) > 0:
         np_acctable = np.zeros([task + 1, task + 1])
